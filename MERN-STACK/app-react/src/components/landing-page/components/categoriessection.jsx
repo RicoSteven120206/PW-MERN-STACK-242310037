@@ -1,5 +1,5 @@
 import React from 'react'
-import GenreData from "../../../constants/list_genre";
+import GenreData from "../../../const/list_genre";
 
 export default function CategoriesSection() {
   return (

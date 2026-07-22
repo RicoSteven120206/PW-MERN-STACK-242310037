@@ -1,5 +1,5 @@
 import React from "react";
-import UserTestimonials from "../../../constants/list_testimon";
+import UserTestimonials from "../../../const/list_testimon";
 
 export default function TestimonSection() {
   return (

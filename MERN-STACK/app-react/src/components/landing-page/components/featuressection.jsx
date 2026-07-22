@@ -1,5 +1,5 @@
 import React from 'react'
-import ListBook from "../../../constants/list_books";
+import ListBook from "../../../const/list_books";
 import BookCard from "./bookcard";
 
 export default function FeaturesSection() {
