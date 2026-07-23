@@ -1,26 +1,34 @@
-"use client"
+"use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Menu_CMS } from '@/const/menu_cms';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { logout } = useAuth(); // Memanggil logout dari AuthContext
+
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
+
   const handleMouseEnter = () => {
     if (isCollapsed) {
       setIsHovered(true);
     }
   };
+
   const handleMouseLeave = () => {
     setIsHovered(false);
   };
+
   const isExpanded = !isCollapsed || isHovered;
+
   return (
     <aside
       className={`sidebar ${!isExpanded ? "collapsed" : ""}`}
@@ -44,6 +52,7 @@ export default function Sidebar() {
           ></i>
         </button>
       </div>
+
       <div className="sidebar-content">
         <ul className="sidebar-menu">
           {Menu_CMS.map((item) => (
@@ -59,6 +68,18 @@ export default function Sidebar() {
             </li>
           ))}
         </ul>
+      </div>
+
+      <div className="sidebar-footer">
+        <button
+          type="button"
+          className="logout-btn"
+          onClick={logout}
+          data-title="Logout"
+        >
+          <i className="bi bi-box-arrow-right"></i>
+          <span className="menu-text">Logout</span>
+        </button>
       </div>
     </aside>
   );

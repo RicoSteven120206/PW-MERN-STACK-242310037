@@ -4,17 +4,27 @@ const { Op } = db.Sequelize;
 const path = require("path");
 const fs = require("fs");
 
+// Helper untuk menghapus file secara aman (Cross-platform support)
 const deleteFile = (filePath) => {
-  if (filePath && fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
+  if (!filePath) return;
+  try {
+    const cleanPath = filePath.replace(/^[\/\\]/, "");
+    const fullPath = path.isAbsolute(cleanPath)
+      ? cleanPath
+      : path.join(__dirname, "..", cleanPath);
+
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+    }
+  } catch (error) {
+    console.error("Error deleting file:", error);
   }
 };
 
 const renameBookImage = (oldPath, bookId, bookTitle) => {
   try {
     const ext = path.extname(oldPath);
-    // Sanitize title: lowercase, replace spaces with hyphens, remove special chars
-    const sanitizedTitle = bookTitle
+    const sanitizedTitle = (bookTitle || "book")
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9-]/g, "")
@@ -27,8 +37,23 @@ const renameBookImage = (oldPath, bookId, bookTitle) => {
     return `/uploads/books/${newFilename}`;
   } catch (error) {
     console.error("Error renaming file:", error);
-    return oldPath; // Return old path if rename fails
+    return oldPath;
   }
+};
+
+// Helper parsing angka & boolean aman
+const parseNumber = (val, defaultVal) => {
+  if (val === undefined || val === null || val === "") return defaultVal;
+  const parsed = Number(val);
+  return isNaN(parsed) ? defaultVal : parsed;
+};
+
+const parseBoolean = (val, defaultVal = false) => {
+  if (val === undefined || val === null) return defaultVal;
+  if (typeof val === "boolean") return val;
+  if (typeof val === "string") return val.toLowerCase() === "true" || val === "1";
+  if (typeof val === "number") return val === 1;
+  return defaultVal;
 };
 
 // Get all books
@@ -36,7 +61,6 @@ exports.getAllBooks = async (req, res) => {
   try {
     const { search, is_free, language, sort_by, order } = req.query;
 
-    // Build where clause
     let whereClause = {};
 
     if (search) {
@@ -50,16 +74,16 @@ exports.getAllBooks = async (req, res) => {
       };
     }
 
-    if (is_free !== undefined) {
-      whereClause.is_free = is_free === "true";
+    if (is_free !== undefined && is_free !== "") {
+      whereClause.is_free = parseBoolean(is_free);
     }
 
     if (language) {
       whereClause.language = language;
     }
 
-    // Build order clause
-    let orderClause = [["created_at", "DESC"]];
+    // PERBAIKAN: Menggunakan 'id' sebagai pengurutan default aman agar tidak error di MySQL
+    let orderClause = [["id", "DESC"]];
     if (sort_by) {
       const sortOrder = order && order.toUpperCase() === "ASC" ? "ASC" : "DESC";
       orderClause = [[sort_by, sortOrder]];
@@ -97,7 +121,6 @@ exports.getBookById = async (req, res) => {
       });
     }
 
-    // Increment views
     await book.increment("views");
     await book.reload();
 
@@ -118,37 +141,23 @@ exports.getBookById = async (req, res) => {
 // Create new book
 exports.createBook = async (req, res) => {
   try {
-    console.log("Request body:", req.body);
-    console.log("Request file:", req.file);
-    console.log("User from token:", req.user);
-
     const { title, author, rating, views, is_free, language, sinopsis, story } = req.body;
 
-    // Validation
     if (!title || !author || !sinopsis || !story) {
-      if (req.file) {
-        deleteFile(req.file.path);
-      }
+      if (req.file) deleteFile(req.file.path);
 
       return res.status(400).json({
         success: false,
         message: "Title, author, sinopsis, and story are required",
-        received: {
-          title: title || "missing",
-          author: author || "missing",
-          sinopsis: sinopsis || "missing",
-          story: story || "missing",
-        },
       });
     }
 
-    // Prepare book data (without image first)
     const bookData = {
       title: title.trim(),
       author: author.trim(),
-      rating: rating ? parseFloat(rating) : 0.0,
-      views: views ? parseInt(views) : 0,
-      is_free: is_free === "true" || is_free === true || is_free === 1,
+      rating: parseNumber(rating, 0.0),
+      views: parseNumber(views, 0),
+      is_free: parseBoolean(is_free, false),
       language: language || "English",
       sinopsis: sinopsis.trim(),
       story: story.trim(),
@@ -156,12 +165,8 @@ exports.createBook = async (req, res) => {
       created_by: req.user?.email || "system",
     };
 
-    console.log("Book data to create:", bookData);
-
-    // Create book
     const book = await Book.create(bookData);
 
-    // Rename and update image if file was uploaded
     if (req.file) {
       const newImagePath = renameBookImage(req.file.path, book.id, book.title);
       await book.update({ image: newImagePath });
@@ -174,10 +179,7 @@ exports.createBook = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating book:", error);
-
-    if (req.file) {
-      deleteFile(req.file.path);
-    }
+    if (req.file) deleteFile(req.file.path);
 
     if (error.name === "SequelizeValidationError") {
       return res.status(400).json({
@@ -204,43 +206,38 @@ exports.updateBook = async (req, res) => {
     const book = await Book.findByPk(req.params.id);
 
     if (!book) {
-      if (req.file) {
-        deleteFile(req.file.path);
-      }
-
-      return res.status(404).json({
-        success: false,
-        message: "Book not found",
-      });
+      if (req.file) deleteFile(req.file.path);
+      return res.status(404).json({ success: false, message: "Book not found" });
     }
 
     const { title, author, rating, views, is_free, language, sinopsis, story } = req.body;
 
-    // Prepare update data
     const updateData = {
-      title: title || book.title,
-      author: author || book.author,
-      rating: rating ? parseFloat(rating) : book.rating,
-      views: views ? parseInt(views) : book.views,
-      is_free: is_free !== undefined ? is_free === "true" || is_free === true : book.is_free,
+      title: title ? title.trim() : book.title,
+      author: author ? author.trim() : book.author,
+      rating: rating !== undefined ? parseNumber(rating, book.rating) : book.rating,
+      views: views !== undefined ? parseNumber(views, book.views) : book.views,
+      is_free: is_free !== undefined ? parseBoolean(is_free, book.is_free) : book.is_free,
       language: language || book.language,
-      sinopsis: sinopsis || book.sinopsis,
-      story: story || book.story,
+      sinopsis: sinopsis ? sinopsis.trim() : book.sinopsis,
+      story: story ? story.trim() : book.story,
       updated_by: req.user?.email || "system",
     };
 
-    // Handle image update
-    if (req.file) {
-      if (book.image) {
-        const oldImagePath = path.join(__dirname, "..", book.image);
-        deleteFile(oldImagePath);
-      }
+    const oldImage = book.image;
 
+    if (req.file) {
       const newImagePath = renameBookImage(req.file.path, book.id, updateData.title);
       updateData.image = newImagePath;
     }
 
+    // Update database terlebih dahulu
     await book.update(updateData);
+
+    // Jika update sukses dan ada file baru, hapus file lama
+    if (req.file && oldImage) {
+      deleteFile(oldImage);
+    }
 
     res.json({
       success: true,
@@ -249,19 +246,13 @@ exports.updateBook = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating book:", error);
-
-    if (req.file) {
-      deleteFile(req.file.path);
-    }
+    if (req.file) deleteFile(req.file.path);
 
     if (error.name === "SequelizeValidationError") {
       return res.status(400).json({
         success: false,
         message: "Validation error",
-        errors: error.errors.map((e) => ({
-          field: e.path,
-          message: e.message,
-        })),
+        errors: error.errors.map((e) => ({ field: e.path, message: e.message })),
       });
     }
 
@@ -279,48 +270,37 @@ exports.patchBook = async (req, res) => {
     const book = await Book.findByPk(req.params.id);
 
     if (!book) {
-      if (req.file) {
-        deleteFile(req.file.path);
-      }
-      return res.status(404).json({
-        success: false,
-        message: "Book not found",
-      });
+      if (req.file) deleteFile(req.file.path);
+      return res.status(404).json({ success: false, message: "Book not found" });
     }
 
     const updateData = { ...req.body };
 
-    // Convert is_free to boolean if present
     if (updateData.is_free !== undefined) {
-      updateData.is_free = updateData.is_free === "true" || updateData.is_free === true;
+      updateData.is_free = parseBoolean(updateData.is_free);
     }
-
-    // Convert rating to float if present
     if (updateData.rating !== undefined) {
-      updateData.rating = parseFloat(updateData.rating);
+      updateData.rating = parseNumber(updateData.rating, book.rating);
     }
-
-    // Convert views to integer if present
     if (updateData.views !== undefined) {
-      updateData.views = parseInt(updateData.views);
+      updateData.views = parseNumber(updateData.views, book.views);
     }
 
-    // Add updated_by
-    updateData.updated_by = req.user?.email;
+    updateData.updated_by = req.user?.email || "system";
 
-    // Handle image update
+    const oldImage = book.image;
+
     if (req.file) {
-      if (book.image) {
-        const oldImagePath = path.join(__dirname, "..", book.image);
-        deleteFile(oldImagePath);
-      }
-
       const titleForFilename = updateData.title || book.title;
       const newImagePath = renameBookImage(req.file.path, book.id, titleForFilename);
       updateData.image = newImagePath;
     }
 
     await book.update(updateData);
+
+    if (req.file && oldImage) {
+      deleteFile(oldImage);
+    }
 
     res.json({
       success: true,
@@ -329,19 +309,13 @@ exports.patchBook = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating book:", error);
-
-    if (req.file) {
-      deleteFile(req.file.path);
-    }
+    if (req.file) deleteFile(req.file.path);
 
     if (error.name === "SequelizeValidationError") {
       return res.status(400).json({
         success: false,
         message: "Validation error",
-        errors: error.errors.map((e) => ({
-          field: e.path,
-          message: e.message,
-        })),
+        errors: error.errors.map((e) => ({ field: e.path, message: e.message })),
       });
     }
 
@@ -359,16 +333,11 @@ exports.deleteBook = async (req, res) => {
     const book = await Book.findByPk(req.params.id);
 
     if (!book) {
-      return res.status(404).json({
-        success: false,
-        message: "Book not found",
-      });
+      return res.status(404).json({ success: false, message: "Book not found" });
     }
 
-    // Delete image file if exists
     if (book.image) {
-      const imagePath = path.join(__dirname, "..", book.image);
-      deleteFile(imagePath);
+      deleteFile(book.image);
     }
 
     await book.destroy();

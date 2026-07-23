@@ -1,7 +1,8 @@
-import React from "react";
-import { Button } from "../../ui/buttons";
+'use client';
+import { useRouter } from "next/navigation";
+import { Button } from "../../ui/button";
 
-export default function Navbar() {
+export function Navbar() {
   const menu_nav = [
     { id: 1, name: "Home", link: "#home" },
     { id: 2, name: "Books", link: "#books" },
@@ -9,6 +10,12 @@ export default function Navbar() {
     { id: 4, name: "About", link: "#about" },
     { id: 5, name: "Contact", link: "#contact" },
   ];
+
+  const router = useRouter();
+  const handleSignIn = () => {
+    router.push('/sign-in');
+  }
+
   return (
     <nav
       className={`navbar navbar-expand-lg fixed-top transition-navbar`}
@@ -37,8 +44,9 @@ export default function Navbar() {
               </li>
             ))}
           </ul>
+
           <div className="d-flex gap-2">
-            <Button className="btn btn-light text-dark">
+            <Button className="btn btn-light text-dark" onClick={handleSignIn}>
               <i className="bi bi-box-arrow-in-right me-2"></i>
               Sign In
             </Button>
@@ -52,6 +60,7 @@ export default function Navbar() {
     </nav>
   );
 }
+
 const styles = {
   navigationBar: {
     backgroundColor: "rgba(247, 248, 226, 0.8)",

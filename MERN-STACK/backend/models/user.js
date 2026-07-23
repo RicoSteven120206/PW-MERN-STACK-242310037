@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
       is_active: {
-        type: DataTypes.BOOLEAN, 
+        type: DataTypes.BOOLEAN,
         allowNull: true,
       },
     },
@@ -35,7 +35,7 @@ module.exports = (sequelize, DataTypes) => {
       sequelize,
       modelName: "User",
       tableName: "users",
-      timestamps: true, 
+      timestamps: true,
     }
   );
 

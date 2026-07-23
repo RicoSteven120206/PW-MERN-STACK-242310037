@@ -1,6 +1,5 @@
-const db = require("../models");
-const jwt = require("jsonwebtoken");
-
+const jwt = require('jsonwebtoken'); 
+ 
 exports.verifyToken = (req, res, next) => {
   try {
     // Get token from header
@@ -23,7 +22,6 @@ exports.verifyToken = (req, res, next) => {
             message: "Token has expired",
           });
         }
-
         return res.status(403).json({
           success: false,
           message: "Invalid token",
@@ -36,7 +34,6 @@ exports.verifyToken = (req, res, next) => {
     });
   } catch (error) {
     console.error("Error verifying token:", error);
-
     res.status(500).json({
       success: false,
       message: "Failed to authenticate token",
@@ -47,7 +44,9 @@ exports.verifyToken = (req, res, next) => {
 
 exports.checkUserActive = async (req, res, next) => {
   try {
+    const db = require("../models");
     const User = db.User;
+
     const user = await User.findByPk(req.user.id);
 
     if (!user) {
@@ -67,7 +66,6 @@ exports.checkUserActive = async (req, res, next) => {
     next();
   } catch (error) {
     console.error("Error checking user status:", error);
-
     res.status(500).json({
       success: false,
       message: "Failed to verify user status",

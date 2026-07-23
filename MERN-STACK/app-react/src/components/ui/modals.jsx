@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Modal } from "react-bootstrap";
-import { Button } from "@/components/ui/buttons";
+import { Button } from "@/components/ui/button";
 
 const states = {
   setState: null,

@@ -1,58 +1,60 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react'
+
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pagination } from 'react-bootstrap';
 
 const HeaderDatatables = ({ headers, onSorting, ...others }) => {
-    const [sortingField, setSortingField] = useState("");
-    const [sortingOrder, setSortingOrder] = useState("asc");
-    const onSortingChange = (field) => {
-        const order =
-            field === sortingField && sortingOrder === "asc" ? "desc" : "asc";
-        setSortingField(field);
-        setSortingOrder(order);
-        onSorting(field, order);
-    };
+  const [sortingField, setSortingField] = useState("");
+  const [sortingOrder, setSortingOrder] = useState("asc");
 
-    return (
-        <thead>
-            <tr className="text-start fw-bold text-uppercase gs-0" {...others}>
-                {headers.map(({ name, field, sortable }) => (
-                    <th
-                        className={"text-secondary fs-6 " + 
-(sortable === true && "cursor-pointer")}
-                        key={name}
-                        onClick={() => (sortable ? onSortingChange(field) : null)} >
-                        {name}
-                        {sortingField && sortingField === field && (
-                            <i className={"fs-6 ms-1 text-secondary "+
-                                    (sortingOrder === "asc"
-                                        ? "bi bi-sort-up"
-                                        : "bi bi-sort-down")
-                               }
-                            />
-                        )}
-                    </th>
-                ))}
-            </tr>
-        </thead>
-    );
+  const onSortingChange = (field) => {
+    const order =
+      field === sortingField && sortingOrder === "asc" ? "desc" : "asc";
+    setSortingField(field);
+    setSortingOrder(order);
+    onSorting(field, order);
+  };
+
+  return (
+    <thead>
+      <tr className="text-start fw-bold text-uppercase gs-0" {...others}>
+        {/* TAMBAHAN: className dimasukkan ke destructuring & dipasang di <th> */}
+        {headers.map(({ name, field, sortable, className = "" }) => (
+          <th
+            className={`text-secondary fs-6 ${sortable ? "cursor-pointer" : ""} ${className}`.trim()}
+            key={name}
+            onClick={() => (sortable ? onSortingChange(field) : null)}
+          >
+            {name}
+            {sortingField && sortingField === field && (
+              <i
+                className={`fs-6 ms-1 text-secondary bi bi-sort-${
+                  sortingOrder === "asc" ? "up" : "down"
+                }`}
+              />
+            )}
+          </th>
+        ))}
+      </tr>
+    </thead>
+  );
 };
 
 const SearchInput = ({ keyword, onAction }) => {
-    return (
-        <div className="input-group">
-            <span className="input-group-text bg-white border-end-0">
-                <i className="bi bi-search"></i>
-            </span>
-            <input
-                type="text"
-                className="form-control border-start-0"
-                placeholder="Search here..."
-                value={keyword}
-                onChange={onAction}
-            />
-        </div>
-    )
+  return (
+    <div className="input-group">
+      <span className="input-group-text bg-white border-end-0">
+        <i className="bi bi-search"></i>
+      </span>
+      <input
+        type="text"
+        className="form-control border-start-0"
+        placeholder="Search here..."
+        value={keyword}
+        onChange={onAction}
+      />
+    </div>
+  );
 };
 
 const PaginationComponent = ({
@@ -60,7 +62,7 @@ const PaginationComponent = ({
   itemsPerPage = 10,
   currentPage = 1,
   onPageChange,
-  maxPageItems = 10
+  maxPageItems = 10,
 }) => {
   const [totalPages, setTotalPages] = useState(0);
 
@@ -103,9 +105,7 @@ const PaginationComponent = ({
           </Pagination.Item>
         );
         if (startPage > 2) {
-          pages.push(
-            <Pagination.Ellipsis key="ellipsis-start" disabled />
-          );
+          pages.push(<Pagination.Ellipsis key="ellipsis-start" disabled />);
         }
       }
       for (let i = startPage; i <= endPage; i++) {
@@ -121,9 +121,7 @@ const PaginationComponent = ({
       }
       if (endPage < totalPages) {
         if (endPage < totalPages - 1) {
-          pages.push(
-            <Pagination.Ellipsis key="ellipsis-end" disabled />
-          );
+          pages.push(<Pagination.Ellipsis key="ellipsis-end" disabled />);
         }
 
         pages.push(
@@ -144,7 +142,7 @@ const PaginationComponent = ({
   if (totalPages === 0) return null;
 
   return (
-    <Pagination>
+    <Pagination className="mb-0">
       <Pagination.First
         onClick={() => onPageChange(1)}
         disabled={currentPage === 1}
@@ -166,4 +164,4 @@ const PaginationComponent = ({
   );
 };
 
-export { HeaderDatatables, SearchInput, PaginationComponent}
+export { HeaderDatatables, SearchInput, PaginationComponent };

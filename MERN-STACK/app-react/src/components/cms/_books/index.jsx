@@ -4,72 +4,85 @@ import React, { useEffect, useState } from "react";
 import { openModal } from "@/components/ui/modals";
 import { Alert } from "@/components/ui/alerts";
 import { Skeleton } from "@/components/ui/loading";
+import { GET_ALL_BOOK } from "@/components/apis/BookServices";
 import { CardCalculates } from "../components/card_calculates";
 import { Header } from "./components/header";
 import Form from "./components/form";
 import Tabledata from "./components/tabledata";
-import ListBooks from '../../../const/bookList';
-
-const GET_ALL_BOOK = async () => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        loading: false,
-        data: ListBooks,
-        message: "",
-      });
-    }, 500); 
-  });
-};
 
 export function MBooks() {
-  const [books, setBooks] = useState({ loading: true, data: [], message: "" });
+  const [books, setBooks] = useState({ loading: false, data: [], message: "" });
 
   const ReloadBook = async () => {
     setBooks({ loading: true, data: [], message: "" });
-    const results = await GET_ALL_BOOK();
-    setBooks(results);
+    try {
+      const results = await GET_ALL_BOOK();
+      if (results && results.data) {
+        setBooks({
+          loading: false,
+          data: Array.isArray(results.data) ? results.data : [],
+          message: "",
+        });
+      } else {
+        setBooks({
+          loading: false,
+          data: [],
+          message: results?.message || "Failed to fetch books",
+        });
+      }
+    } catch (err) {
+      setBooks({
+        loading: false,
+        data: [],
+        message: err?.message || "An error occurred",
+      });
+    }
   };
 
   useEffect(() => {
     ReloadBook();
   }, []);
 
-  const totalAuthors = new Set(books?.data?.map((b) => b.author).filter(Boolean)).size;
+  const handleAddModal = () => {
+    openModal({
+      message: <Form ReloadBook={ReloadBook} />,
+      size: "xl",
+    });
+  };
+
+  const bookData = books.data || [];
 
   return (
     <div className="container-fluid">
-      <Header 
-        handleAdd={() => openModal({ message: <Form ReloadBook={ReloadBook} />, size: "xl" })} 
-      />
+      <Header handleAdd={handleAddModal} />
 
       <div className="row">
         <div className="col-md-3">
           <CardCalculates
-            title={`Total Books`}
-            value={books?.data?.length || 0}
-            icon={`book`}
+            title="Total Books"
+            value={bookData.length}
+            icon="book"
           />
         </div>
         <div className="col-md-3">
           <CardCalculates
-            title={`Free Book`}
-            value={books?.data?.filter((b) => b.is_free).length || 0}
-            icon={`grid`}
+            title="Free Book"
+            value={bookData.filter((b) => b.is_free).length}
+            icon="grid"
           />
         </div>
         <div className="col-md-3">
           <CardCalculates
-            title={`Subscribe`}
-            value={books?.data?.filter((b) => !b.is_free).length || 0}
-            icon={`calendar-event`}
+            title="Subscribe"
+            value={bookData.filter((b) => !b.is_free).length}
+            icon="calendar-event"
           />
         </div>
         <div className="col-md-3">
           <CardCalculates
-            title={`Authors`}
-            value={totalAuthors}
-            icon={`people`}
+            title="Authors"
+            value={bookData.filter((b) => b.author).length}
+            icon="people"
           />
         </div>
       </div>
@@ -78,11 +91,9 @@ export function MBooks() {
         <Skeleton />
       ) : books.message ? (
         <Alert message={books.message} variant="danger" />
-      ) : books.data && books.data.length > 0 ? (
-        <Tabledata data={books.data} ReloadData={ReloadBook} />
       ) : (
-        ""
-      )}    
+        <Tabledata data={bookData} ReloadData={ReloadBook} />
+      )}
     </div>
   );
 }

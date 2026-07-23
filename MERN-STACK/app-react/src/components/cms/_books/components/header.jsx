@@ -1,5 +1,8 @@
+"use client";
+
 import React from "react";
-import { Button } from "@/components/ui/buttons";
+import { Button } from "@/components/ui/button";
+
 export function Header({ handleAdd }) {
   return (
     <div className="row mb-4">

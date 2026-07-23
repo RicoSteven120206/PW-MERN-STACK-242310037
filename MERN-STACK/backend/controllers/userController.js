@@ -4,72 +4,6 @@ const { Op } = db.Sequelize;
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-// Login users
-exports.loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required",
-      });
-    }
-
-    // Find user by email
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-    }
-
-    // Check if user is active
-    if (!user.is_active) {
-      return res.status(403).json({
-        success: false,
-        message: "Account is inactive. Please contact administrator",
-      });
-    }
-
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-    }
-
-    const userResponse = {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-    };
-
-    const expirationTime = Math.floor(Date.now() / 1000) + 6 * 60 * 60;
-    const accessToken = jwt.sign(userResponse, process.env.JWT_SECRET, {
-      expiresIn: "6h",
-    });
-
-    res.json({
-      success: true,
-      message: "Login successful",
-      data: userResponse,
-      accessToken,
-      expiresIn: expirationTime,
-    });
-  } catch (error) {
-    console.error("Error during login:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to login",
-      error: error.message,
-    });
-  }
-};
-
 // Get all users
 exports.getAllUsers = async (req, res) => {
   try {
@@ -93,7 +27,11 @@ exports.getAllUsers = async (req, res) => {
     }
 
     // Build order clause
-    let orderClause = [["created_at", "DESC"]];
+    // FIX: tabel "users" tidak punya kolom timestamp (createdAt/created_at),
+    // jadi default sorting sekarang pakai "id" DESC (id auto-increment,
+    // jadi ID lebih besar = dibuat lebih belakangan -- pengganti "terbaru dulu"
+    // yang aman tanpa perlu kolom timestamp sama sekali).
+    let orderClause = [["createdAt", "DESC"]];
     if (sort_by) {
       const sortOrder = order && order.toUpperCase() === "ASC" ? "ASC" : "DESC";
       orderClause = [[sort_by, sortOrder]];
@@ -412,4 +350,66 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
+exports.loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    } // Find user by email
+    const user = await User.findOne({ where: { email } });
 
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
+    // Check if user is active
+    if (!user.is_active) {
+      return res.status(403).json({
+        success: false,
+        message: "Account is inactive. Please contact administrator",
+      });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
+    const userResponse = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    };
+
+    const expirationTime = Math.floor(Date.now() / 1000) + 6 * 60 * 60;
+    const accessToken = jwt.sign(userResponse, process.env.JWT_SECRET, {
+      expiresIn: "6h",
+    });
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      data: userResponse,
+      accessToken,
+      expiresIn: expirationTime,
+    });
+  } catch (error) {
+    console.error("Error during login:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to login",
+      error: error.message,
+    });
+  }
+};
