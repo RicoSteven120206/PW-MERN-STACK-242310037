@@ -1,18 +1,12 @@
-const express = require('express');
+const express = require("express"); 
 const router = express.Router();
 const bookController = require("../controllers/bookController");
-const upload = require("../middleware/upload");
-const { verifyToken } = require('../middleware/auth');
-
-router.use(verifyToken);
-
-//CRUD Routes
+// CRUD routes
 router.get("/", bookController.getAllBooks);
-router.get("/:id", bookController.getBookById);
+router.get("/:id", bookController.getBookById); 
+router.post("/", bookController.createBook); 
+router.put("/:id", bookController.updateBook); 
+router.patch("/:id", bookController.patchBook); 
 router.delete("/:id", bookController.deleteBook);
-
-router.post("/", upload.single("coverImage"), bookController.createBook);
-router.put("/:id", upload.single("coverImage"), bookController.updateBook);
-router.patch("/:id", upload.single("coverImage"), bookController.patchBook);
 
 module.exports = router;

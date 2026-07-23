@@ -1,5 +1,4 @@
-'use strict';
-const {
+'use strict'; const {
     Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
@@ -15,14 +14,10 @@ module.exports = (sequelize, DataTypes) => {
     }
     Book.init({
         id: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true,
-            allowNull: false
+            type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false
         },
         title: {
-            type: DataTypes.STRING(255),
-            allowNull: false,
+            type: DataTypes.STRING(255), allowNull: false,
             validate: {
                 notEmpty: {
                     msg: 'Title cannot be empty'
@@ -34,8 +29,7 @@ module.exports = (sequelize, DataTypes) => {
             }
         },
         author: {
-            type: DataTypes.STRING(255),
-            allowNull: false,
+            type: DataTypes.STRING(255), allowNull: false,
             validate: {
                 notEmpty: {
                     msg: 'Author cannot be empty'
@@ -43,10 +37,8 @@ module.exports = (sequelize, DataTypes) => {
             }
         },
         rating: {
-            type: DataTypes.DECIMAL(3, 2),
-            allowNull: true,
-            defaultValue: 0.00,
-            validate: {
+            type: DataTypes.DECIMAL(3, 2), allowNull: true,
+            defaultValue: 0.00, validate: {
                 min: {
                     args: [0],
                     msg: 'Rating must be at least 0'
@@ -58,10 +50,7 @@ module.exports = (sequelize, DataTypes) => {
             }
         },
         views: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            defaultValue: 0,
-            validate: {
+            type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, validate: {
                 min: {
                     args: [0],
                     msg: 'Views cannot be negative'
@@ -69,24 +58,17 @@ module.exports = (sequelize, DataTypes) => {
             }
         },
         is_free: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: false
+            type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false
         },
         language: {
-            type: DataTypes.STRING(50),
-            allowNull: false,
-            defaultValue: 'English',
-            validate: {
+            type: DataTypes.STRING(50), allowNull: false, defaultValue: 'English', validate: {
                 notEmpty: {
                     msg: 'Language cannot be empty'
                 }
             }
         },
         sinopsis: {
-            type: DataTypes.TEXT,
-            allowNull: false,
-            validate: {
+            type: DataTypes.TEXT, allowNull: false, validate: {
                 notEmpty: {
                     msg: 'Sinopsis cannot be empty'
                 },
@@ -97,8 +79,7 @@ module.exports = (sequelize, DataTypes) => {
             }
         },
         story: {
-            type: DataTypes.TEXT('long'),
-            allowNull: false,
+            type: DataTypes.TEXT('long'), allowNull: false,
             validate: {
                 notEmpty: {
                     msg: 'Story cannot be empty'
@@ -110,8 +91,7 @@ module.exports = (sequelize, DataTypes) => {
             }
         },
         image: {
-            type: DataTypes.STRING(500),
-            allowNull: true,
+            type: DataTypes.STRING(500), allowNull: true,
             validate: {
                 isValidPath(value) {
                     if (value && !value.startsWith('/uploads/')) {
@@ -122,8 +102,7 @@ module.exports = (sequelize, DataTypes) => {
                     if (value) {
                         const validExtensions = ['.jpg', '.jpeg', '.png', '.gif',
                             '.webp'];
-                        const hasValidExtension = validExtensions.some(ext =>
-                            value.toLowerCase().endsWith(ext)
+                        const hasValidExtension = validExtensions.some(ext => value.toLowerCase().endsWith(ext)
                         );
                         if (!hasValidExtension) {
                             throw new Error('Image must have a valid extension (jpg, jpeg, png, gif, webp)');
@@ -133,21 +112,14 @@ module.exports = (sequelize, DataTypes) => {
             }
         },
         created_by: {
-            type: DataTypes.STRING(255),
-            allowNull: true
+            type: DataTypes.STRING(255), allowNull: true
         },
         updated_by: {
-            type: DataTypes.STRING(255),
-            allowNull: true
+            type: DataTypes.STRING(255), allowNull: true
         }
     }, {
-        sequelize,
-        modelName: 'Book',
-        tableName: 'books',
-        timestamps: true,
-        underscored: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at'
+        sequelize, modelName: 'Book', tableName: 'books', timestamps: true, underscored: true,
+        createdAt: 'created_at', updatedAt: 'updated_at'
     });
     return Book;
 };
